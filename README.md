@@ -1,20 +1,14 @@
 
 
-# BookStore
+# BookStoreNode
 
+###细节
 
+1. 对“书名”进行模糊查询
 
-## Usage
+###工具
 
+1. mongodb
+  
+    1. 命令：use dbName、show collections、db.collectionName.insert({})/find({})、db.collectionName.drop()/remove()
 
-
-## Developing
-
-
-
-### Tools
-
-Created with [Nodeclipse](https://github.com/Nodeclipse/nodeclipse-1)
- ([Eclipse Marketplace](http://marketplace.eclipse.org/content/nodeclipse), [site](http://www.nodeclipse.org))   
-
-Nodeclipse is free open-source project that grows with your contributions.
