@@ -5,6 +5,18 @@ var monk = require('monk');
 //配置express
 var app = express();
 app.set('port',3001);
+app.all('*', function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "content-type");
+    res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
+    res.header("X-Powered-By", ' 3.2.1')
+    res.header("Content-Type", "application/json;charset=utf-8");
+    if(req.method == "OPTIONS") {
+        res.send("200");
+    } else {
+        next();
+    }
+});
 
 //启动express服务
 http
@@ -17,13 +29,11 @@ http
 var db = monk('localhost:27017/BookStore');
 
 //配置路由
-app.get('/books',list);
 app.get('/books/:curPage/:pageSize',list);
 app.get('/books/:curPage/:pageSize/:search',search);
-app.get('/books/del/:id/:curPage/:pageSize/:search',del);
+app.delete('/books/del/:id',del);
 
 function list(req, res) {
-    res.header("Access-Control-Allow-Origin", "*");
     var booksCollection = db.get('books');
     var limit = parseInt(req.params.pageSize?req.params.pageSize:1);
     var curPage = parseInt(req.params.curPage?req.params.curPage:1);
@@ -43,10 +53,7 @@ function list(req, res) {
 };
 
 function search(req,res){
-    res.header("Access-Control-Allow-Origin", "*");
     var booksCollection = db.get('books');
-    var searchCollection = db.get('search');
-    searchCollection.remove({});
     var limit = parseInt(req.params.pageSize?req.params.pageSize:1);
     var curPage = parseInt(req.params.curPage?req.params.curPage:1);
     var searchStr = {};
@@ -59,67 +66,26 @@ function search(req,res){
         return obj;
     }();
     booksCollection
-        .find(searchStr,{"_id":0})
-        .then((docs)=>{
-            for(var i = 0;i<(docs.length);i++){
-                if(i == docs.length-1){
-                    return searchCollection.insert(docs[i]);
-                }
-                else{
-                    searchCollection.insert(docs[i]);
-                }
-            }
-        })
+        .find(searchStr,{"_id":0,limit:limit,skip:(curPage-1)*limit})
         .then((docs) =>{
-            console.log(docs);
-            data.pages = 0;
+            data.books = docs;
             data.curPage = curPage;
             data.pageSize = limit;
-            data.books = docs;
-            return searchCollection.count()
+            return booksCollection.find(searchStr)
         })
-        .then((docs) => {
-            data.pages = Math.ceil(docs/limit);
+        .then((docs)=>{
+            data.pages = Math.ceil(docs.length/limit);
             res.json(data);
         })
 }
 
 function del(req,res) {
-    res.header("Access-Control-Allow-Origin", "*");
     var booksCollection = db.get('books');
-    var searchCollection = db.get('search');
-    searchCollection.remove({});
-    var id = parseInt(req.params.id);
-    var limit = parseInt(req.params.pageSize?req.params.pageSize:1);
-    var curPage = parseInt(req.params.curPage?req.params.curPage:1);
-    var data = {};
-    var searchStr = {};
-    searchStr = function () {
-        var obj = {};
-        if(req.params.search){
-            obj = {name:new RegExp(req.params.search)}  //对name字段支持“模糊查询”
-        }
-        return obj;
-    }();
     booksCollection
-        .remove({id:id})
-        .then((docs)=>{
-            return booksCollection.find(searchStr,{"_id":0})
-        })
-        .then((docs)=>{
-            docs.forEach(function (doc) {
-                searchCollection.insert(doc);
-            })
-            return searchCollection.count()
-        })
-        .then((docs) =>{
-            data.pages = Math.ceil(docs/limit);
-            data.pageSize = limit;
-            data.curPage = curPage;
-            return searchCollection.find({},{limit:limit,skip:(curPage-1)*limit})
-        }).then((docs)=>{
-            data.books = docs;
-            res.json(data);
-        })
+        .remove({id:parseInt(req.params.id)})
+        .then(()=>{
+            res.json({"code":0});
+        });
 }
+
 
