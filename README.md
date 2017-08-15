@@ -56,3 +56,21 @@
 4. 跨域支持
 
         res.header("Access-Control-Allow-Origin", "*");
+        
+5. 模糊查询
+
+    用正则表达式匹配name字段
+    
+        searchStr = function () {
+            var obj = {};
+            if(req.params.search){
+                obj = {name:new RegExp(req.params.search)}  //对name字段支持“模糊查询”
+            }
+            return obj;
+        }();
+        
+6. 分页查询
+
+    find()第二个参数配置limit和skip字段
+    
+        booksCollection.find({},{limit:limit,skip:(curPage-1)*limit})
