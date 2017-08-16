@@ -1,10 +1,12 @@
 var express = require('express');
 var http = require('http');
 var monk = require('monk');
+var bodyParser=require('body-parser');
 
 //配置express
 var app = express();
 app.set('port',3001);
+app.use(bodyParser.json());//需使用该方法，否则req.body为空对象
 app.all('*', function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "content-type");
@@ -32,6 +34,7 @@ var db = monk('localhost:27017/BookStore');
 app.get('/books/:curPage/:pageSize',list);
 app.get('/books/:curPage/:pageSize/:search',search);
 app.delete('/books/del/:id',del);
+app.post('/books/add/',add);
 
 function list(req, res) {
     var booksCollection = db.get('books');
@@ -86,6 +89,22 @@ function del(req,res) {
         .then(()=>{
             res.json({"code":0});
         });
+}
+
+function add(req,res) {
+    var booksCollection = db.get('books');
+    var data = {};
+    booksCollection
+        .findOne({},{sort: {id: -1}}) //找到当前最书籍中最大ID，sort:{id:-1}表示降序排序
+        .then((docs)=>{
+            var book = req.body;
+            book.id = (parseInt(docs.id)+1);  //自动生成新增ID:最大id基础上加1
+            return booksCollection.insert(book)
+        })
+        .then((docs)=>{
+            data.code = 0;
+            res.json(data);
+        })
 }
 
 

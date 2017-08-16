@@ -74,3 +74,19 @@
     find()第二个参数配置limit和skip字段
     
         booksCollection.find({},{limit:limit,skip:(curPage-1)*limit})
+        
+7. 删除
+
+        booksCollection.remove({id:parseInt(req.params.id)})
+        
+8. 新增
+
+        var bodyParser=require('body-parser');
+        app.use(bodyParser.json()); //需使用该方法，否则req.body为空对象
+        booksCollection
+          .findOne({},{sort: {id: -1}})  //找到当前最书籍中最大ID，sort:{id:-1}表示降序排序
+          .then((docs)=>{
+              var book = req.body;
+              book.id = (parseInt(docs.id)+1); //自动生成新增ID:最大id基础上加1
+              return booksCollection.insert(book)
+          })   
