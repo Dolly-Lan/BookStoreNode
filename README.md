@@ -33,7 +33,7 @@
 
 4. http请求
 
-    get（读取）、post（创建）、update更新、delete（删除）
+    get（读取）、post（创建）、put更新、delete（删除）
     
 ###细节
 
@@ -86,7 +86,21 @@
         booksCollection
           .findOne({},{sort: {id: -1}})  //找到当前最书籍中最大ID，sort:{id:-1}表示降序排序
           .then((docs)=>{
-              var book = req.body;
+              var book = req.body;  //获取post的对象
               book.id = (parseInt(docs.id)+1); //自动生成新增ID:最大id基础上加1
               return booksCollection.insert(book)
-          })   
+          }) 
+          
+9. 更新
+
+        var book=req.body; ////获取put的对象
+        //执行更新,第1个参数是要更新的图书查找条件，第2个参数是要更新的对象
+        booksCollection
+            .update({"id":book.id}, book)
+            .then((docs)=>{
+                //返回更新完成后的对象
+                return booksCollection.find({"id":book.id})
+            })
+            .then((docs)=>{
+                res.json(docs[0]);
+            }) 

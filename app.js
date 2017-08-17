@@ -35,6 +35,7 @@ app.get('/books/:curPage/:pageSize',list);
 app.get('/books/:curPage/:pageSize/:search',search);
 app.delete('/books/del/:id',del);
 app.post('/books/add/',add);
+app.put('/books/update/',update);
 
 function list(req, res) {
     var booksCollection = db.get('books');
@@ -47,7 +48,7 @@ function list(req, res) {
             data.pages = Math.ceil(docs/limit);
             data.curPage = curPage;
             data.pageSize = limit;
-            return booksCollection.find({},{limit:limit,skip:(curPage-1)*limit})
+            return booksCollection.find({},{"_id":0,"id":1,"name":1,limit:limit,skip:(curPage-1)*limit})
         })
         .then((docs) => {
             data.books = docs;
@@ -74,7 +75,7 @@ function search(req,res){
             data.books = docs;
             data.curPage = curPage;
             data.pageSize = limit;
-            return booksCollection.find(searchStr)
+            return booksCollection.find(searchStr,{"_id":0})
         })
         .then((docs)=>{
             data.pages = Math.ceil(docs.length/limit);
@@ -95,7 +96,7 @@ function add(req,res) {
     var booksCollection = db.get('books');
     var data = {};
     booksCollection
-        .findOne({},{sort: {id: -1}}) //找到当前最书籍中最大ID，sort:{id:-1}表示降序排序
+        .findOne({},{sort: {id: -1},"_id":0}) //找到当前最书籍中最大ID，sort:{id:-1}表示降序排序
         .then((docs)=>{
             var book = req.body;
             book.id = (parseInt(docs.id)+1);  //自动生成新增ID:最大id基础上加1
@@ -107,4 +108,19 @@ function add(req,res) {
         })
 }
 
+function update(req, res) {
+    var booksCollection = db.get('books');
+    var book=req.body;
+    var data = {};
+    //执行更新,第1个参数是要更新的图书查找条件，第2个参数是要更新的对象
+    booksCollection
+        .update({"id":book.id}, book)
+        .then((docs)=>{
+            //返回更新完成后的对象
+            return booksCollection.find({"id":book.id})
+        })
+        .then((docs)=>{
+            res.json(docs[0]);
+        })
+};
 
